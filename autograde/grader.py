@@ -39,28 +39,37 @@ def scores(fs, Test):
         grades.append((anr(f), score))
     return sorted(grades)
 
-def check_strict(tester, function, inputs):
+def identity(x):
+    return x
+
+def check_strict(tester, function, inputs, post=identity):
     "Check whether outputs match exactly."
     for args in inputs:
         gold = tester.gold[function](*args)
         stud = tester.student[function](*args)
-        assert_equal(gold, stud)
+        assert_equal(post(gold), post(stud))
 
-def check_close(tester, function, inputs):
+def check_close(tester, function, inputs, post=identity):
     "Check whether outputs (assumed to be numpy arrays) match approximately."
     for args in inputs:
         gold = tester.gold[function](*args)
         stud = tester.student[function](*args)
-        assert_allclose(gold, stud)
+        assert_allclose(post(gold), post(stud))
 
-def check_seq_close(tester, function, inputs):
+def check_seq_close(tester, function, inputs, post=identity):
     "Check whether outputs (assumed to be tuples of numpy arrays) match approximately."
     for args in inputs:
         gold = tester.gold[function](*args)
         stud = tester.student[function](*args)
         for (a,b) in zip(gold, stud):
-            assert_allclose(a, b)
-    
+            assert_allclose(post(a), post(b))
+
+def check_pos_close(tester, function, inputs, pos, post=identity):
+    "Check whether outputs (assumed to be tuples of numpy arrays) match approximately at position pos."
+    for args in inputs:
+        gold = tester.gold[function](*args)
+        stud = tester.student[function](*args)
+        assert_allclose(post(gold[pos]), post(stud[pos]))
 	
 def check(tester, function, inputs):
     "Check whether outputs match. Tries to be too smart: use at own risk."
