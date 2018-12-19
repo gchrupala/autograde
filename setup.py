@@ -2,7 +2,7 @@
 from setuptools import setup
 
 setup(name='autograde',
-      version='0.1',
+      version='0.2',
       description='Grade coding assignments',
       url='https://github.com/gchrupala/autograde',
       author='Grzegorz Chrupała',

@@ -1,14 +1,39 @@
 import unittest
 import sys
 import os
+import os.path
 from numpy.testing import assert_allclose, assert_equal
+import glob
+import re
 
-def check_file(f, Test):
+def get_name_test_vision(f):
+    match = re.search('\)_[0-9]+_(.+)\.py', f)
+    if match is not None:
+        return match.group(1)
+    else:
+        return os.path.splitext(os.path.basename(f))[0]
+    
+def run_on_file(f, Test):
+    "Run tests on file."
     Test.student_file = f
     suite = unittest.TestLoader().loadTestsFromTestCase(Test)
     unittest.TextTestRunner(verbosity=2).run(suite)
 
-def test(f, Test):
+def run_on_directory(directory, Test, get_name=get_name_test_vision, stream=sys.stdout):
+    "Run tests on directory."
+    files = glob.glob(directory + "/*.py")
+    for f in files:
+        name = get_name(f)
+        Test.student_file = f
+        Test.setUpClass()
+        suite = unittest.TestLoader().loadTestsFromTestCase(Test)
+        tests = dict((test._testMethodName[5:], test) for test in suite._tests)
+        test = tests[name]
+        unittest.TextTestRunner(verbosity=2, stream=stream).run(test)
+        
+    
+def score_file(f, Test):
+    "Compute score on file."
     realstdout = sys.stdout
     sys.stdout = open('/dev/null', "w")
     Test.student_file = f
@@ -27,6 +52,35 @@ def test(f, Test):
             results[test._testMethodName] = outcome
     sys.stdout = realstdout
     return results
+# Backward compatibility
+test = score_file
+
+def score_directory(directory, Test, get_name=get_name_test_vision):
+    "Compute score on directory."
+    realstdout = sys.stdout
+    sys.stdout = open('/dev/null', "w")
+    files = glob.glob(directory + "/*.py")
+    results = {}
+    for f in files:
+        name = get_name(f)
+        Test.student_file = f
+        Test.setUpClass()
+        suite = unittest.TestLoader().loadTestsFromTestCase(Test)
+
+        tests = dict((test._testMethodName[5:], test) for test in suite._tests)
+        test = tests[name]
+        r = unittest.TestResult()
+        test.run(r)
+        if r.errors:
+            outcome = 0
+        elif r.failures:
+            outcome = 0
+        else:
+            outcome = Test.points(test._testMethodName[5:]) # skip "test_" prefix
+        results[test._testMethodName] = outcome
+    sys.stdout = realstdout
+    return results
+
 
 def anr(filename):
     return os.path.basename(filename).split('_')[1]
