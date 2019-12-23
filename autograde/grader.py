@@ -19,17 +19,18 @@ def run_on_file(f, Test):
     suite = unittest.TestLoader().loadTestsFromTestCase(Test)
     unittest.TextTestRunner(verbosity=2).run(suite)
 
-def run_on_directory(directory, Test, get_name=get_name_test_vision, stream=sys.stdout):
+def run_on_directory(directory, Test, get_name=get_name_test_vision, stream=sys.stdout, pattern="*.py"):
     "Run tests on directory."
-    files = glob.glob(directory + "/*.py")
+    files = glob.glob(directory + "/" + pattern)
     for f in files:
         name = get_name(f)
         Test.student_file = f
         Test.setUpClass()
         suite = unittest.TestLoader().loadTestsFromTestCase(Test)
         tests = dict((test._testMethodName[5:], test) for test in suite._tests)
-        test = tests[name]
-        unittest.TextTestRunner(verbosity=2, stream=stream).run(test)
+        test = tests.get(name)
+        if test is not None:
+            unittest.TextTestRunner(verbosity=2, stream=stream).run(test)
         
     
 def score_file(f, Test):
@@ -55,11 +56,11 @@ def score_file(f, Test):
 # Backward compatibility
 test = score_file
 
-def score_directory(directory, Test, get_name=get_name_test_vision):
+def score_directory(directory, Test, get_name=get_name_test_vision, pattern="*.py"):
     "Compute score on directory."
     realstdout = sys.stdout
     sys.stdout = open('/dev/null', "w")
-    files = glob.glob(directory + "/*.py")
+    files = glob.glob(directory + "/" + pattern)
     results = {}
     for f in files:
         name = get_name(f)
@@ -68,16 +69,17 @@ def score_directory(directory, Test, get_name=get_name_test_vision):
         suite = unittest.TestLoader().loadTestsFromTestCase(Test)
 
         tests = dict((test._testMethodName[5:], test) for test in suite._tests)
-        test = tests[name]
-        r = unittest.TestResult()
-        test.run(r)
-        if r.errors:
-            outcome = 0
-        elif r.failures:
-            outcome = 0
-        else:
-            outcome = Test.points(test._testMethodName[5:]) # skip "test_" prefix
-        results[test._testMethodName] = outcome
+        test = tests.get(name)
+        if test is not None:
+            r = unittest.TestResult()
+            test.run(r)
+            if r.errors:
+                outcome = 0
+            elif r.failures:
+                outcome = 0
+            else:
+                outcome = Test.points(test._testMethodName[5:]) # skip "test_" prefix
+            results[test._testMethodName] = outcome
     sys.stdout = realstdout
     return results
 
