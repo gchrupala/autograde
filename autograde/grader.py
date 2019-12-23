@@ -19,6 +19,7 @@ def run_on_file(f, Test):
     suite = unittest.TestLoader().loadTestsFromTestCase(Test)
     unittest.TextTestRunner(verbosity=2).run(suite)
 
+    
 def run_on_directory(directory, Test, get_name=get_name_test_vision, stream=sys.stdout, pattern="*.py"):
     "Run tests on directory."
     files = glob.glob(directory + "/" + pattern)
